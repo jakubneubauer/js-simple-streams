@@ -1,0 +1,40 @@
+{
+  "name": "@jakubneubauer/simple-streams",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "version": "0.0.2",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules  node_modules/jest/bin/jest.js",
+    "build": "tsc",
+    "perf": "node perf.js"
+  },
+  "repository": { "type" : "git"
+  , "url" : "http://github.com/"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.5.0",
+    "jest": "^28.0.3",
+    "ts-jest": "^28.0.1",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@jakubneubauer/limited-blocking-queue": "^1.0.2"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "transform": {
+      "^.+\\.(t|j)s?$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "./simple-streams.js": "./simple-streams"
+    },
+    "moduleFileExtensions": ["ts","js"],
+    "extensionsToTreatAsEsm": [".ts"],
+    "globals": {
+      "ts-jest": {
+        "useESM": true
+      }
+    }
+  }
+}

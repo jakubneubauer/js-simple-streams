@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": [
+      "es6",
+      "dom",
+      "es2018.asynciterable"
+    ]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "test"]
+}
