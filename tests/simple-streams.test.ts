@@ -1,53 +1,34 @@
 import {Reader, Writer, Transformer, WriterSink, ReaderSource, ReaderController} from "../src";
 
-class IMWS implements WriterSink {
-    result: string = ""
-
-    write(chunk: any): Promise<any> {
-        this.result += chunk;
-        return Promise.resolve(undefined);
-    }
-
-    close(): Promise<any> {
-        this.result += ".";
-        return Promise.resolve(undefined);
-    }
-}
-
-class InMemoryWriter extends Writer {
-    mysink: IMWS
-
+class MemoryWriter extends Writer {
+    _result = ""
     constructor() {
-        let sink = new IMWS()
-        super(sink);
-        this.mysink = sink;
+        super({
+            write: async (chunk, controller) => {
+                this._result += chunk;
+            },
+            close: async() => {
+                this._result += ".";
+            }
+        })
     }
-
     get result() {
-        return this.mysink.result;
+        return this._result;
     }
 }
 
-class FixedReaderSource implements ReaderSource {
-    index = 0
-    data: any[]
-
+class MemoryReader extends Reader {
+    private index = 0
     constructor(data: any[]) {
-        this.data = data;
-    }
-
-    async pull(controller: ReaderController) {
-        if (this.index >= this.data.length) {
-            await controller.close();
-            return;
-        }
-        await controller.enqueue(this.data[this.index++]);
-    }
-}
-
-class FixedReader extends Reader {
-    constructor(data: any[]) {
-        super(new FixedReaderSource(data));
+        super({
+            pull: async(controller: ReaderController) => {
+                if (this.index >= data.length) {
+                    await controller.close();
+                    return;
+                }
+                await controller.enqueue(data[this.index++]);
+            }
+        });
     }
 }
 
@@ -186,21 +167,21 @@ test("writer - basic test", async () => {
 });
 
 test("reader writer - pipeTo", async () => {
-    let r = new FixedReader([1, 2, 3]);
-    let w = new InMemoryWriter();
+    let r = new MemoryReader([1, 2, 3]);
+    let w = new MemoryWriter();
     await r.pipeTo(w);
     expect(w.result).toBe("123.");
 });
 
 test("reader transformer - pipeThrough", async () => {
-    let r = new FixedReader([1, 2, 3]);
+    let r = new MemoryReader([1, 2, 3]);
     let r2 = r.pipeThrough(new ParenthesizingTransformer())
     expect(await readAllToString(r2)).toBe("(1)(2)(3)");
 });
 
 test("reader writer transformer - pipeThrough pipeTo", async () => {
-    let r = new FixedReader([1, 2, 3]);
-    let w = new InMemoryWriter();
+    let r = new MemoryReader([1, 2, 3]);
+    let w = new MemoryWriter();
     await r
         .pipeThrough(new ParenthesizingTransformer())
         .pipeThrough(new ParenthesizingTransformer())
@@ -362,7 +343,7 @@ test("reader,transformer,writer pipe - reader error is propagated", async() => {
             await controller.error('test error');
         }
     });
-    let w = new InMemoryWriter();
+    let w = new MemoryWriter();
     let p = r
         .pipeThrough(new ParenthesizingTransformer())
         .pipeTo(w);

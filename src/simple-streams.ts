@@ -12,30 +12,19 @@ export interface ReaderController {
     error(e?: any): void
 }
 
-export interface WriterController {
-    error(e?: any): void
-}
-
 export interface ReaderSource {
     pull?(controller: ReaderController): Promise<any>;
     start?(controller: ReaderController): any;
     cancel?(): any;
 }
 
-export interface WriterSink {
-    write?(chunk: any, controller: WriterController): Promise<any>
-    close?(controller: WriterController): Promise<any>
-    abort?(reason: any): Promise<any>
-    start?(controller: WriterController): Promise<any>
-}
-
-export interface TransformerSource {
-    transform?(chunk: any, controller: ReaderController): Promise<any>
-    flush?(controller: ReaderController): Promise<any>
-}
-
 export class ReaderOptions {
     public bufferSize?: number
+}
+
+interface ReaderWriter {
+    reader: Reader
+    writer: Writer
 }
 
 export class Reader {
@@ -46,7 +35,7 @@ export class Reader {
     private readonly cancelAlg: () => any;
     private readonly bufferSize: number;
     private readonly buffer: LimitedBlockingQueue;
-    readonly controller: ReaderController & {reader: Reader};
+    readonly controller: ReaderController;
 
     constructor(source: ReaderSource, options?: ReaderOptions) {
         this.closed = false;
@@ -58,23 +47,25 @@ export class Reader {
         this.bufferSize = options?.bufferSize ?? 100;
         this.buffer = new LimitedBlockingQueue(this.bufferSize);
         this.controller = {
-            reader: this,
-            enqueue(chunk) {
-                if(this.reader.closed) return Promise.reject("Reader is closed");
-                return this.reader.buffer.push(chunk);
+            enqueue: (chunk) => {
+                if(this.closed) return Promise.reject("Reader is closed");
+                if (this.isError) {
+                    return Promise.reject(this.error);
+                }
+                return this.buffer.push(chunk);
             },
-            close(reason: any = undefined) {
-                if(this.reader.closed) return Promise.resolve()
-                this.reader.pullAlg = undefined;
-                return this.reader.buffer.push(EOF).then(() => {this.reader.closed = true; this.reader.buffer.close(reason,true);});
+            close: (reason: any = undefined) => {
+                if(this.closed) return Promise.resolve()
+                this.pullAlg = undefined;
+                return this.buffer.push(EOF).then(() => {this.closed = true; this.buffer.close(reason,true);});
             },
-            error(reason: any = undefined) {
-                if(this.reader.closed || this.reader.isError) return
-                // this.reader.closed = true;
-                this.reader.isError = true;
-                this.reader.error = reason;
-                this.reader.pullAlg = undefined;
-                this.reader.buffer.close(reason);
+            error: (reason: any = undefined) => {
+                if(this.closed || this.isError) return
+                // this.closed = true;
+                this.isError = true;
+                this.error = reason;
+                this.pullAlg = undefined;
+                this.buffer.close(reason);
             }
         }
         let startResult = startAlg(this.controller);
@@ -170,6 +161,17 @@ export class Reader {
     }
 }
 
+export interface WriterController {
+    error(e?: any): void
+}
+
+export interface WriterSink {
+    write?(chunk: any, controller: WriterController): Promise<any>
+    close?(controller: WriterController): Promise<any>
+    abort?(reason: any): Promise<any>
+    start?(controller: WriterController): Promise<any>
+}
+
 export class Writer {
     private sink: WriterSink;
     private isClosed = false;
@@ -259,9 +261,9 @@ export class Writer {
     }
 }
 
-interface ReaderWriter {
-    reader: Reader
-    writer: Writer
+export interface TransformerSource {
+    transform?(chunk: any, controller: ReaderController): Promise<any>
+    flush?(controller: ReaderController): Promise<any>
 }
 
 export class Transformer implements ReaderWriter{
