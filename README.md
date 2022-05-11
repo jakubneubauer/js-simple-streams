@@ -1,15 +1,13 @@
 # simple-streams
 
 Alternative to [web streams](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API).
-Is faster than nodejs built-in web-streams implementation.
+Is faster than nodejs built-in web-streams implementation (see below - pass-through scenario about 6x faster)
 The API is similar, but not same.
 
 Implementation uses
 [Limited blocking queue](https://www.npmjs.com/package/@jakubneubauer/limited-blocking-queue)
 as a buffer for reading/writing
 and synchronization mechanism between readers/transformers/writers.
-
-TODO: Error handling.
 
 ## Example
 
@@ -42,10 +40,14 @@ let writer = new ss.Writer({
 });
 
 (async function() {
+    // We can read with async for loop. The loop is interrupted
+    // just for an example so that we can continue reading below.
     for await (let i of reader) {
         console.log(i);
         if (i === 3) break;
     }
+    
+    // We can continue reading, for example using pipe API.
     await reader
         .pipeThrough(trans)
         .pipeTo(writer)

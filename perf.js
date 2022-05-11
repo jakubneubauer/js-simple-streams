@@ -3,27 +3,10 @@ import {ReadableStream, TransformStream, WritableStream} from 'stream/web';
 
 const chunksCount = 1_000;
 const benchTime = 5_000;
-const warmupTime = 3_000;
-
-class PassThroughImpl {
-  transform(chunk, controller) {
-      return controller.enqueue(chunk);
-  }
-}
-
-class PassThroughTransformer extends Transformer {
-    constructor() {
-        super(new PassThroughImpl());
-    }
-}
-
-class PassThroughTransformStream extends TransformStream {
-    constructor() {
-        super(new PassThroughImpl());
-    }
-}
+const warmupTime = 2_000;
 
 (async function() {
+
     let resultSimpleStreams = await bench("simple-streams identity transform", benchTime, async () => {
         let reader = new Reader({
             async start(controller) {
@@ -33,9 +16,14 @@ class PassThroughTransformStream extends TransformStream {
                 await controller.close();
             }
         });
+        let transformer = new Transformer({
+            transform(chunk, controller) {
+                return controller.enqueue(chunk);
+            }
+        })
         let writer = new Writer({});
         await reader
-            .pipeThrough(new PassThroughTransformer())
+            .pipeThrough(transformer)
             .pipeTo(writer);
     }, warmupTime);
 
@@ -48,9 +36,14 @@ class PassThroughTransformStream extends TransformStream {
                 await controller.close();
             }
         });
+        let transformer = new TransformStream({
+            transform(chunk, controller) {
+                return controller.enqueue(chunk);
+            }
+        })
         let writer = new WritableStream({});
         await reader
-            .pipeThrough(new PassThroughTransformStream())
+            .pipeThrough(transformer)
             .pipeTo(writer);
     }, warmupTime);
     
