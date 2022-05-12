@@ -7,7 +7,7 @@ const warmupTime = 2_000;
 
 (async function() {
 
-    let resultSimpleStreams = await bench("simple-streams identity transform", benchTime, async () => {
+    let resultSimpleStreams = await bench("simple-streams identity transform - " + chunksCount + " chunks", benchTime, async () => {
         let reader = new Reader({
             async start(controller) {
                 for (let i = 0; i < chunksCount; i++) {
@@ -27,7 +27,7 @@ const warmupTime = 2_000;
             .pipeTo(writer);
     }, warmupTime);
 
-    let resultBuiltInStreams = await bench("built-in web-streams identity transform", benchTime, async () => {
+    let resultBuiltInStreams = await bench("built-in web-streams identity transform - " + chunksCount + " chunks", benchTime, async () => {
         let reader = new ReadableStream({
             async start(controller) {
                 for (let i = 0; i < chunksCount; i++) {

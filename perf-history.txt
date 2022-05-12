@@ -1,0 +1,9 @@
+Version 0.0.3
+simple-streams identity transform - 1000 chunks: result: {"rate":1225.5143599927,"count":6143,"time":5012.589162999764}
+built-in web-streams identity transform - 1000 chunks: result: {"rate":190.5658680730911,"count":959,"time":5032.380718000233}
+simple-streams / built-in = 6.4309226640872375
+
+Version 0.0.4
+simple-streams identity transform - 1000 chunks: result: {"rate":1366.8246432240921,"count":7167,"time":5243.54022699967}
+built-in web-streams identity transform - 1000 chunks: result: {"rate":196.4686648433269,"count":1023,"time":5206.937202000059}
+simple-streams / built-in = 6.956960003337227
